@@ -1,8 +1,8 @@
 # PROJ_Q_YV3p5_I2C_SLAVE
 I2C slave device relative code.
-======================================================================================================================================
-OVERLOOK - LATEST
-======================================================================================================================================
+### ======================================================================================================================================
+### OVERLOOK - LATEST
+### ======================================================================================================================================
 PHASE1. DEVICE CODE	v1.2	2021.11.25
 PHASE2. PLATFORM CODE	v1.0	2021.11.25
 
@@ -46,7 +46,7 @@ COMMIT CONTEXT
 
     (6) Slave queue method: Zephyr api, unregister the bus while full msgq, register back while msgq get space.
 */
-_____HISTORY___________________________________________________________________________________________________________________
+##### _____HISTORY___________________________________________________________________________________________________________________
 v1.0 - 2021.11.23 - First commit
 v1.1 - 2021.11.24 - Code modify1
 		    * Simplify code
@@ -77,21 +77,23 @@ v1.2 - 2021.11.25 - Code modify2
         * Common init
           "util_init_I2C_slave()" --> "q_i2c_slave_register()"
 
-_____HISTORY___________________________________________________________________________________________________________________
-v1.0 - 2021.11.25 - First commit
+##### _____HISTORY___________________________________________________________________________________________________________________
+##### v1.0 - 2021.11.25 - First commit
 
 
 
-======================================================================================================================================
-USAGE
-======================================================================================================================================
-[STEP1. Set bus and address main.c]
+### ======================================================================================================================================
+### USAGE
+### ======================================================================================================================================
+##### [STEP1. Set bus and address main.c]
+```c
 	static mctp_smbus_port smbus_port[MCTP_SMBUS_NUM] = {
 		{.conf.smbus_conf.addr = 0x60, .conf.smbus_conf.bus = 0x00},
 		{.conf.smbus_conf.addr = 0x40, .conf.smbus_conf.bus = 0x01}
 	};
-
-[STEP2. Add i2c slave activate function to main.c]
+```
+##### [STEP2. Add i2c slave activate function to main.c]
+```c
 	void do_init_I2C_slave(void) {
 		uint8_t ret = 0;
 
@@ -100,22 +102,22 @@ USAGE
 
 	  	/* Parsing slave config only if bus is enable */
 	  	for (int i=0; i<MAX_SLAVE_NUM; i++){
-	    	if (I2C_SLAVE_CFG_TABLE[i].enable){
-				ret = q_i2c_slave_init(i, I2C_SLAVE_CFG_TABLE[i].controller_dev_name, I2C_SLAVE_CFG_TABLE[i].address, I2C_SLAVE_CFG_TABLE[i].i2c_msg_count);
+			if (I2C_SLAVE_CFG_TABLE[i].enable){
+				struct _i2c_slave_config *cur_cfg = (struct _i2c_slave_config *)malloc(sizeof(struct _i2c_slave_config));
+				cur_cfg->address = I2C_SLAVE_CFG_TABLE[i].address;
+				cur_cfg->controller_dev_name = I2C_SLAVE_CFG_TABLE[i].controller_dev_name;
+				cur_cfg->i2c_msg_count = I2C_SLAVE_CFG_TABLE[i].i2c_msg_count;
+				cur_cfg->enable = I2C_SLAVE_CFG_TABLE[i].enable;
+
+				ret = q_i2c_slave_control(i, cur_cfg, I2C_CONTROL_REGISTER);
 				if (ret)
 					printk("do_init_I2C_slave: Init bus[%d] slave - failed, cause of errorcode[%d]\n", i, ret);
 				else
-					printk("+ Init bus[%d] slave - success!\n", i);
-
-				ret = q_i2c_slave_register(i);
-				if (ret)
-					printk("do_init_I2C_slave: Register bus[%d] slave - failed, cause of errorcode[%d]\n", i, ret);
-	      		else
-				printk("+ Register bus[%d] slave - success!\n", i);
+					printk("+ Init bus[%d] slave -   success!\n", i);
 			}
 	  	}
 	}
-
+```
 [STEP3. Add init function to main.c "main()"]
 	....
 	util_init_I2C();

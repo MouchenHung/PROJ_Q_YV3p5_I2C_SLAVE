@@ -139,30 +139,6 @@ static const struct i2c_slave_callbacks i2c_slave_cb = {
 };
 
 /*
-  - Name: i2c_controller_check
-  - Description: Check whether i2c controller exist.
-  - Input:
-      * bus_num: Bus number with zero base
-  - Return: 
-      * 0, if no error
-      * others, get error(check "i2c_slave_error_status")
-*/
-static int i2c_controller_check(uint8_t bus_num){
-	char controllerName[10] = "I2C_";
-	char num[10];
-
-	sprintf(num, "%d", (int)bus_num);
-	strcat(controllerName, num);
-
-	const struct device *tmp_device = device_get_binding(controllerName);
-
-  if (!tmp_device)
-    return 1;
-
-	return 0;
-}
-
-/*
   - Name: q_i2c_slave_status_get (ESSENTIAL for every user API)
   - Description: Get current status of i2c slave.
   - Input:
@@ -323,7 +299,7 @@ uint8_t q_i2c_slave_read(uint8_t bus_num, uint8_t *buff, uint16_t buff_len, uint
   - Input:
       * bus_num: Bus number with zero base
       * *cfg: Config settings structure
-      * en: check "i2c_slave_api_control_mode"
+      * mode: check "i2c_slave_api_control_mode"
   - Return: 
       * 0, if no error
       * others, get error(check "i2c_slave_api_error_status")
@@ -380,6 +356,30 @@ int q_i2c_slave_control(uint8_t bus_num, struct _i2c_slave_config *cfg, enum i2c
   }
 
   return I2C_SLAVE_API_NO_ERR;
+}
+
+/*
+  - Name: i2c_controller_check
+  - Description: Check whether i2c controller exist.
+  - Input:
+      * bus_num: Bus number with zero base
+  - Return: 
+      * 0, if no error
+      * others, get error(check "i2c_slave_error_status")
+*/
+static int i2c_controller_check(uint8_t bus_num){
+	char controllerName[10] = "I2C_";
+	char num[10];
+
+	sprintf(num, "%d", (int)bus_num);
+	strcat(controllerName, num);
+
+	const struct device *tmp_device = device_get_binding(controllerName);
+
+  if (!tmp_device)
+    return 1;
+
+	return 0;
 }
 
 /*

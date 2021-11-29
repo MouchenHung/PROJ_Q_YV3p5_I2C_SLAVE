@@ -2,7 +2,6 @@
 #define PLAT_I2C_SLAVE_H
 
 #include <drivers/i2c.h>
-#include <drivers/i2c/slave/ipmb.h>
 #include "hal_i2c_slave.h"
 
 #define SLAVE_ENABLE 1

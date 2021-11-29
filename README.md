@@ -3,8 +3,8 @@ I2C slave device relative code.
 ### ======================================================================================================================================
 ### OVERLOOK - LATEST
 ### ======================================================================================================================================
-PHASE1. DEVICE CODE	v1.2	2021.11.25
-PHASE2. PLATFORM CODE	v1.0	2021.11.25
+###### PHASE1. DEVICE CODE	v1.2	2021.11.25
+###### PHASE2. PLATFORM CODE	v1.0	2021.11.25
 
 ======================================================================================================================================
 COMMIT CONTEXT
@@ -97,9 +97,6 @@ v1.2 - 2021.11.25 - Code modify2
 	void do_init_I2C_slave(void) {
 		uint8_t ret = 0;
 
-		/* Init i2c slave global and mutex */
-		util_init_I2C_slave();
-
 	  	/* Parsing slave config only if bus is enable */
 	  	for (int i=0; i<MAX_SLAVE_NUM; i++){
 			if (I2C_SLAVE_CFG_TABLE[i].enable){
@@ -118,18 +115,16 @@ v1.2 - 2021.11.25 - Code modify2
 	  	}
 	}
 ```
-[STEP3. Add init function to main.c "main()"]
-	....
-	util_init_I2C();
-
+##### [STEP3. Add init function to main.c "main()"]
+	```c
 	do_init_I2C_slave();
 
 	uint32_t i;
 	for (i = 0; i < MCTP_SMBUS_NUM; i++) {
-	....
+	```
 
-[STEP3. Add read api to "mctp_smbus_read"]
-	...
+##### [STEP3. Add read api to "mctp_smbus_read"]
+	```c
 	uint8_t ret = q_i2c_slave_read(mctp_inst->medium_conf.smbus_conf.bus, rdata, ARRAY_SIZE(rdata), &rlen);
 	if (ret){
 	printk("Error occur: couse of errorcode[%d]\n", ret);
@@ -137,4 +132,4 @@ v1.2 - 2021.11.25 - Code modify2
 
 	//rlen--;
 	//memmove(&rdata[0], &rdata[1], rlen);
-	...
+	```

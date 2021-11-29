@@ -8,6 +8,7 @@
 
 #define MAX_I2C_SLAVE_BUFF 512
 #define MAX_SLAVE_NUM 16
+#define I2C_DEVICE_PREFIX "I2C_"
 
 struct __attribute__((__packed__)) i2c_msg_package {
 	uint16_t msg_length;

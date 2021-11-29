@@ -368,7 +368,7 @@ int q_i2c_slave_control(uint8_t bus_num, struct _i2c_slave_config *cfg, enum i2c
       * others, get error(check "i2c_slave_error_status")
 */
 static int i2c_controller_check(uint8_t bus_num){
-	char controllerName[10] = "I2C_";
+	char controllerName[10] = I2C_DEVICE_PREFIX;
 	char num[10];
 
 	sprintf(num, "%d", (int)bus_num);

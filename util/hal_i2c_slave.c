@@ -45,9 +45,10 @@ static struct i2c_slave_device i2c_slave_device_global[MAX_SLAVE_NUM] = { 0 };
 
 /* I2C slave config modify lock */
 struct k_mutex i2c_slave_mutex[MAX_SLAVE_NUM];
+//K_MUTEX_DEFINE(i2c_slave_mutex[MAX_SLAVE_NUM]);
 
 /* static function declare */
-static int i2c_controller_check(uint8_t bus_num);
+static char* get_i2c_controller_name(uint8_t bus_num);
 static uint8_t do_i2c_slave_cfg(uint8_t bus_num, struct _i2c_slave_config *cfg);
 static int do_i2c_slave_register(uint8_t bus_num);
 static int do_i2c_slave_unregister(uint8_t bus_num);
@@ -153,10 +154,12 @@ uint8_t q_i2c_slave_status_get(uint8_t bus_num)
 
   if (bus_num >= MAX_SLAVE_NUM){
     ret|=I2C_SLAVE_BUS_INVALID;
+    goto out;
   }
 
-  if (i2c_controller_check(bus_num)){
+  if (!get_i2c_controller_name(bus_num)){
     ret|=I2C_SLAVE_CONTROLLER_ERR;
+    goto out;
   }
 
   if (!i2c_slave_device_global[bus_num].is_init){
@@ -167,6 +170,7 @@ uint8_t q_i2c_slave_status_get(uint8_t bus_num)
     ret|=I2C_SLAVE_NOT_REGISTER;
   }
 
+out:
   return ret;
 }
 
@@ -359,7 +363,7 @@ int q_i2c_slave_control(uint8_t bus_num, struct _i2c_slave_config *cfg, enum i2c
 }
 
 /*
-  - Name: i2c_controller_check
+  - Name: get_i2c_controller_name
   - Description: Check whether i2c controller exist.
   - Input:
       * bus_num: Bus number with zero base
@@ -367,19 +371,19 @@ int q_i2c_slave_control(uint8_t bus_num, struct _i2c_slave_config *cfg, enum i2c
       * 0, if no error
       * others, get error(check "i2c_slave_error_status")
 */
-static int i2c_controller_check(uint8_t bus_num){
-	char controllerName[10] = I2C_DEVICE_PREFIX;
-	char num[10];
-
+static char* get_i2c_controller_name(uint8_t bus_num){
+  char num[4];
+	char *controllerName = (char*)malloc(10);
+  strcpy(controllerName, I2C_DEVICE_PREFIX);
 	sprintf(num, "%d", (int)bus_num);
 	strcat(controllerName, num);
 
 	const struct device *tmp_device = device_get_binding(controllerName);
 
   if (!tmp_device)
-    return 1;
+    return NULL;
 
-	return 0;
+	return controllerName;
 }
 
 /*
@@ -405,7 +409,7 @@ static uint8_t do_i2c_slave_cfg(uint8_t bus_num, struct _i2c_slave_config *cfg){
   /* check input, support while bus slave is unregistered */
   slave_status = q_i2c_slave_status_get(bus_num);
   if (slave_status & (I2C_SLAVE_BUS_INVALID | I2C_SLAVE_CONTROLLER_ERR)){
-    LOG_ERR("q_i2c_slave_read: bus[%d] check status failed with error status 0x%x!", bus_num, slave_status);
+    LOG_ERR("do_i2c_slave_cfg: bus[%d] check status failed with error status 0x%x!", bus_num, slave_status);
     return I2C_SLAVE_API_BUS_GET_FAIL;
   }
 
@@ -413,42 +417,48 @@ static uint8_t do_i2c_slave_cfg(uint8_t bus_num, struct _i2c_slave_config *cfg){
   if ( !(slave_status & I2C_SLAVE_NOT_REGISTER) ){
     status = do_i2c_slave_unregister(bus_num);
     if (status){
-      LOG_ERR("q_i2c_slave_init: Slave bus[%d] mutex lock failed!", bus_num);
+      LOG_ERR("do_i2c_slave_cfg: Slave bus[%d] mutex lock failed!", bus_num);
       ret = I2C_SLAVE_API_BUS_GET_FAIL;
       goto unlock;
     }
   }
 
   /* Mutex init here */
-  if (! &i2c_slave_mutex[bus_num]){
+  if (slave_status & I2C_SLAVE_NOT_INIT){
     if (k_mutex_init(&i2c_slave_mutex[bus_num])){
-      LOG_ERR("q_i2c_slave_init: Slave bus[%d] mutex init - failed!", bus_num);
+      LOG_ERR("do_i2c_slave_cfg: Slave bus[%d] mutex init - failed!", bus_num);
       return I2C_SLAVE_API_LOCK_ERR;
     }
-    LOG_DBG("q_i2c_slave_init: Slave bus[%d] mutex init - success!", bus_num);
+    LOG_DBG("do_i2c_slave_cfg: Slave bus[%d] mutex init - success!", bus_num);
   }
 
   if (k_mutex_lock(&i2c_slave_mutex[bus_num], K_MSEC(1000))) {
-    LOG_ERR("q_i2c_slave_init: Slave bus[%d] mutex lock failed!", bus_num);
+    LOG_ERR("do_i2c_slave_cfg: Slave bus[%d] mutex lock failed!", bus_num);
     return I2C_SLAVE_API_LOCK_ERR;
   }
 
-  char *bus_name = cfg->controller_dev_name;
   uint8_t slave_address = cfg->address;
   uint16_t _max_msg_count = cfg->i2c_msg_count;
+
+  char *bus_name = get_i2c_controller_name(bus_num);
+  if (!bus_name){
+    LOG_ERR("do_i2c_slave_cfg: Slave bus[%d] controller get failed!", bus_num);
+    ret = I2C_SLAVE_API_BUS_GET_FAIL;
+    goto unlock;
+  }
 
   struct i2c_slave_data *data = &i2c_slave_device_global[bus_num].data;
   char *i2C_slave_queue_buffer;
 
   /* do init, Only one time init for each bus slave */
   if ( slave_status & I2C_SLAVE_NOT_INIT ){
-    LOG_DBG("q_i2c_slave_init: bus[%d] is going to init!", bus_num);
+    LOG_DBG("do_i2c_slave_cfg: bus[%d] is going to init!", bus_num);
     
     data->i2c_bus = bus_num;
 
     data->i2c_controller = device_get_binding(bus_name);
     if (!data->i2c_controller){
-      LOG_ERR("q_i2c_slave_init: i2c controller not found: %s", bus_name);
+      LOG_ERR("do_i2c_slave_cfg: i2c controller not found: %s", bus_name);
       ret = -EINVAL;
       goto unlock;
     }
@@ -458,7 +468,7 @@ static uint8_t do_i2c_slave_cfg(uint8_t bus_num, struct _i2c_slave_config *cfg){
   }
   /* do modify, modify config set after init */
   else{
-    LOG_DBG("q_i2c_slave_init: bus[%d] is going to modified!", bus_num);
+    LOG_DBG("do_i2c_slave_cfg: bus[%d] is going to modified!", bus_num);
     
     k_msgq_purge(&data->z_msgq_id);
 
@@ -478,11 +488,11 @@ static uint8_t do_i2c_slave_cfg(uint8_t bus_num, struct _i2c_slave_config *cfg){
 
   k_msgq_init(&data->z_msgq_id, i2C_slave_queue_buffer, sizeof(struct i2c_msg_package), data->max_msg_count);
 
-  LOG_DBG("q_i2c_slave_init: I2C slave bus[%d] message queue create success with count %d!", data->i2c_bus, data->max_msg_count);
+  LOG_DBG("do_i2c_slave_cfg: I2C slave bus[%d] message queue create success with count %d!", data->i2c_bus, data->max_msg_count);
 
 unlock:
   if (k_mutex_unlock(&i2c_slave_mutex[bus_num])) {
-    LOG_ERR("q_i2c_slave_init: Mutex unlock failed!");
+    LOG_ERR("do_i2c_slave_cfg: Mutex unlock failed!");
   }
 
   return ret;
@@ -498,6 +508,8 @@ unlock:
       * others, get error(check "i2c_slave_api_error_status")
 */
 static int do_i2c_slave_register(uint8_t bus_num){
+  int ret = 0;
+
   /* Check input and slave status */
   uint8_t slave_status = q_i2c_slave_status_get(bus_num);
   if (slave_status & (I2C_SLAVE_BUS_INVALID | I2C_SLAVE_CONTROLLER_ERR | I2C_SLAVE_NOT_INIT)){
@@ -515,13 +527,17 @@ static int do_i2c_slave_register(uint8_t bus_num){
 
   /* check whether msgq is full */
   if (!k_msgq_num_free_get(&data->z_msgq_id)){
-    LOG_ERR("q_i2c_slave_register: bus[%d] msgq is already full, can't register now, please read out message first!", bus_num);
+    LOG_ERR("do_i2c_slave_register: bus[%d] msgq is already full, can't register now, please read out message first!", bus_num);
     return I2C_SLAVE_API_MSGQ_ERR;
   }
 
+  ret = i2c_slave_register(data->i2c_controller, &data->config);
+  if (ret)
+    return ret;
+  
   i2c_slave_device_global[bus_num].is_register = 1;
 
-  return i2c_slave_register(data->i2c_controller, &data->config);
+  return I2C_SLAVE_API_NO_ERR;
 }
 
 /*
@@ -535,6 +551,8 @@ static int do_i2c_slave_register(uint8_t bus_num){
       * others, get error(check "i2c_slave_api_error_status")
 */
 static int do_i2c_slave_unregister(uint8_t bus_num){
+  int ret = 0;
+
   /* Check input and slave status */
   uint8_t slave_status = q_i2c_slave_status_get(bus_num);
   if (slave_status & (I2C_SLAVE_BUS_INVALID | I2C_SLAVE_CONTROLLER_ERR | I2C_SLAVE_NOT_INIT)){
@@ -549,7 +567,12 @@ static int do_i2c_slave_unregister(uint8_t bus_num){
   }
 
   struct i2c_slave_data *data = &i2c_slave_device_global[bus_num].data;
+
+  ret = i2c_slave_unregister(data->i2c_controller, &data->config);
+  if (ret)
+    return ret;
+  
   i2c_slave_device_global[bus_num].is_register = 0;
 
-  return i2c_slave_unregister(data->i2c_controller, &data->config);
+  return I2C_SLAVE_API_NO_ERR;
 }

@@ -10,6 +10,7 @@ I2C slave device relative code.
 ### COMMIT CONTEXT
 ##### ==================================================================================
 ### { PHASE1. DEVICE CODE }
+'''
   NAME: I2C SLAVE DEVICE
   FILE: hal_i2c_slave.c
   DESCRIPTION: There is 1 callback function "i2c_slave_cb" for I2C slave ISR handle and user APIs "q_*" for user access.
@@ -45,8 +46,9 @@ I2C slave device relative code.
         Able to use only if i2c slace is enable and init
 
     (6) Slave queue method: Zephyr api, unregister the bus while full msgq, register back while msgq get space.
+'''
 
-##### _____HISTORY___________________________________________________________________________________________________________________
+##### _____HISTORY______________________________________________________________________
 '''
 v1.0 - 2021.11.23 - First commit
 v1.1 - 2021.11.24 - Code modify1
@@ -63,12 +65,13 @@ v1.2 - 2021.11.25 - Code modify2
 		    * Move i2c slave table "I2C_SLAVE_CFG_TABLE[]" and "util_init_I2C_slave()" to "plat_i2c_slave.c" as platform file
 '''
 ### { PHASE2. PLATFORM CODE }
-*NAME*: I2C SLAVE INIT<br>
-  *FILE*: plat_i2c_slave.c<br>
-  DESCRIPTION: Provide i2c slave config table "I2C_SLAVE_CFG_TABLE[]" for init and "util_init_I2C_slave()" for user access.<br>
-  AUTHOR: MouchenHung<br>
-  DATE/VERSION: 2021.11.25 - v1.0<br>
-  Note: <br>
+'''
+*NAME*: I2C SLAVE INIT
+*FILE*: plat_i2c_slave.c<br>
+*DESCRIPTION*: Provide i2c slave config table "I2C_SLAVE_CFG_TABLE[]" for init and "util_init_I2C_slave()" for user access.<br>
+*AUTHOR*: MouchenHung<br>
+*DATE/VERSION*: 2021.11.25 - v1.0
+*Note*: <br>
     (1) "plat_i2c_slave.h" is included by "hal_i2c_slave.h"
 
     (2) "util_init_I2C_slave()" is required before any function or api, cause mutex lock create inside it.
@@ -77,8 +80,9 @@ v1.2 - 2021.11.25 - Code modify2
         [INIT]
         * Common init
           "util_init_I2C_slave()" --> "q_i2c_slave_register()"
+'''
 
-##### _____HISTORY___________________________________________________________________________________________________________________
+##### _____HISTORY______________________________________________________________________
 ##### v1.0 - 2021.11.25 - First commit
 
 

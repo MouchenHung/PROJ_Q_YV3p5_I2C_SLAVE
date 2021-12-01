@@ -89,10 +89,10 @@ I2C slave device relative code.
 	  	for (int i=0; i<MAX_SLAVE_NUM; i++){
 			if (I2C_SLAVE_CFG_TABLE[i].enable){
 				struct _i2c_slave_config *cur_cfg = (struct _i2c_slave_config *)malloc(sizeof(struct _i2c_slave_config));
+				cur_cfg->controller_dev_name = NULL; //no affect
+				cur_cfg->enable = 0; //no affect
 				cur_cfg->address = I2C_SLAVE_CFG_TABLE[i].address;
-				cur_cfg->controller_dev_name = I2C_SLAVE_CFG_TABLE[i].controller_dev_name;
 				cur_cfg->i2c_msg_count = I2C_SLAVE_CFG_TABLE[i].i2c_msg_count;
-				cur_cfg->enable = I2C_SLAVE_CFG_TABLE[i].enable;
 
 				ret = i2c_slave_control(i, cur_cfg, I2C_CONTROL_REGISTER);
 				if (ret)

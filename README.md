@@ -19,7 +19,7 @@ I2C slave device relative code.
     (1) Shall not modify code in this file!!!<br>
 <br>
     (2) "hal_i2c_slave.h" must be included!<br>
-
+<br>
     (3) User APIs follow check-rule before doing task <br>
           [api]                               [.is_init] [.is_register]<br>
         * i2c_slave_control                   X          X<br>

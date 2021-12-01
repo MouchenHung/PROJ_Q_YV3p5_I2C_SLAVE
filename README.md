@@ -3,71 +3,65 @@ I2C slave device relative code.
 ##### ==================================================================================
 ### OVERLOOK - LATEST
 ##### ==================================================================================
-###### PHASE1. DEVICE CODE	v1.2	2021.11.25
-###### PHASE2. PLATFORM CODE	v1.0	2021.11.25
+###### **PHASE1**. DEVICE CODE		v1.2	2021.11.25
+###### **PHASE2**. PLATFORM CODE	v1.0	2021.11.25
 
 ##### ==================================================================================
 ### COMMIT CONTEXT
 ##### ==================================================================================
 ### { PHASE1. DEVICE CODE }
-*NAME*: I2C SLAVE DEVICE<br>
-*FILE*: hal_i2c_slave.c<br>
-*DESCRIPTION*: There is 1 callback function "i2c_slave_cb" for I2C slave ISR handle and user APIs "q_*" for user access.<br>
-*AUTHOR*: MouchenHung<br>
-*DATE*/VERSION: 2021.11.25 - v1.2<br>
-*Note*: <br>
+**NAME**: I2C SLAVE DEVICE<br>
+**FILE**: hal_i2c_slave.c<br>
+**DESCRIPTION**: There is 1 callback function "i2c_slave_cb" for I2C slave ISR handle and user APIs "q_*" for user access.<br>
+**AUTHOR**: MouchenHung<br>
+**DATE/VERSION**: 2021.12.01 - v1.4<br>
+**Note**: <br>
     (1) Shall not modify code in this file!!!<br>
 <br>
     (2) "hal_i2c_slave.h" must be included!<br>
-<br>
-    (3) "util_init_I2C_slave()" is required before any function or api, cause mutex lock create inside it.<br>
-<br>
-    (4) User APIs follow check-rule before doing task <br>
-          [api]                               [.is_enable] [.is_init] [.is_register]<br>
-        * q_i2c_slave_enable                  X            X          X<br>
-        * q_i2c_slave_init                    O            X          X<br>
-        * q_i2c_slave_register                O            O          X<br>
-        * q_i2c_slave_unregister              O            O          X<br>
-        * q_i2c_slave_read                    O            O          X<br>
-        * q_i2c_slave_status_get              X            X          X<br>
-        * q_i2c_slave_status_print            X            O          X<br>
+
+    (3) User APIs follow check-rule before doing task <br>
+          [api]                               [.is_init] [.is_register]<br>
+        * i2c_slave_control                   X          X<br>
+        * i2c_slave_read                      O          X<br>
+        * i2c_slave_status_get                X          X<br>
+        * i2c_slave_status_print              X          X<br>
+        * i2c_slave_cfg_get                   O          X<br>
                                               (O: must equal 1, X: no need to check)<br>
 <br>
-    (5) I2C slave function/api usage recommend<br>
-        [RUN TIME ACTION]<br>
-        * If doesn't set before, and want to let one bus slave function work <br>
-          "q_i2c_slave_enable()" --> "q_i2c_slave_init()" --> "q_i2c_slave_register()"<br>
-        * If want to disable one running bus and prevent relative user api usage by user<br>
-          "q_i2c_slave_unregister()" --> "q_i2c_slave_enable()"<br>
-        * If want to modify some config element, if already register before<br>
-          "q_i2c_slave_unregister()" --> "q_i2c_slave_init()" --> "q_i2c_slave_register()"<br>
+    (4) I2C slave function/api usage recommend<br>
+        [ACTIVATE]<br>
+          Use "i2c_slave_control()" to register/modify/unregister slave bus<br>
         [READ]<br>
-        Able to use only if i2c slace is enable and init<br>
+          Use "i2c_slave_read()" to read slave queue message<br>
 <br>
-    (6) Slave queue method: Zephyr api, unregister the bus while full msgq, register back while msgq get space.<br>
-
+    (5) Slave queue method: Zephyr api, unregister the bus while full msgq, register back while msgq get space.<br>
+<br>
 ##### _____HISTORY______________________________________________________________________
-v1.0 - 2021.11.23 - First commit<br>
-v1.1 - 2021.11.24 - Code modify1<br>
+**v1.0 - 2021.11.23** - First commit<br>
+**v1.1 - 2021.11.24** - Code modify1<br>
 		    * Simplify code<br>
 		    * Remove".is_msg_full" from struct "i2c_slave_device"<br>
 		    * Modify "MAX_I2C_SLAVE_BUFF" from 255 to 512<br>
 		    * Remove first byte (slave address) from buffer in slave callback function<br>
 		    * Add new input arg from "util_init_I2C_slave()", to control whether need to do slave register after init<br>
 		    * Add "util_register_I2C_slave()" to user api<br>
-v1.2 - 2021.11.25 - Code modify2<br>
+**v1.2 - 2021.11.25** - Code modify2<br>
 		    * Solve message queue memory free issue<br>
 		    * Add platform code to exclude modifiable code from previous "hal_i2c_slave.c"<br>
 		    * Remove init and register action in function "util_init_I2C_slave()", which means additional action is needed in main function<br>
 		    * Move i2c slave table "I2C_SLAVE_CFG_TABLE[]" and "util_init_I2C_slave()" to "plat_i2c_slave.c" as platform file<br>
+**v1.2 - 2021.12.01** - Code modify3<br>
+		    * Bug fixed<br>
+		    * Simplify code<br>
 <br>
 ### { PHASE2. PLATFORM CODE }
-*NAME*: I2C SLAVE INIT<br>
-*FILE*: plat_i2c_slave.c<br>
-*DESCRIPTION*: Provide i2c slave config table "I2C_SLAVE_CFG_TABLE[]" for init and "util_init_I2C_slave()" for user access.<br>
-*AUTHOR*: MouchenHung<br>
-*DATE/VERSION*: 2021.11.25 - v1.0<br>
-*Note*: <br>
+**NAME**: I2C SLAVE INIT<br>
+**FILE**: plat_i2c_slave.c<br>
+**DESCRIPTION**: Provide i2c slave config table "I2C_SLAVE_CFG_TABLE[]" for init and "util_init_I2C_slave()" for user access.<br>
+**AUTHOR**: MouchenHung<br>
+**DATE/VERSION**: 2021.11.25 - v1.0<br>
+**Note**: <br>
     (1) "plat_i2c_slave.h" is included by "hal_i2c_slave.h"<br>
 <br>
     (2) "util_init_I2C_slave()" is required before any function or api, cause mutex lock create inside it.<br>
@@ -78,10 +72,8 @@ v1.2 - 2021.11.25 - Code modify2<br>
           "util_init_I2C_slave()" --> "q_i2c_slave_register()"<br>
 <br>
 ##### _____HISTORY______________________________________________________________________
-##### v1.0 - 2021.11.25 - First commit
-
-
-
+**v1.0** - 2021.11.25 - First commit<br>
+<br>
 ##### ==================================================================================
 ### USAGE
 ##### ==================================================================================

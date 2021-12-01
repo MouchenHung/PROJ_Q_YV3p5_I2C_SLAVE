@@ -39,7 +39,8 @@ I2C slave device relative code.
 <br>
     (5) Slave queue method: Zephyr api, unregister the bus while full msgq, register back while msgq get space.<br>
 <br>
-##### _____HISTORY______________________________________________________________________<br>
+
+##### _____HISTORY______________________________________________________________________
 **v1.0 - 2021.11.23** - First commit<br>
 **v1.1 - 2021.11.24** - Code modify1<br>
 		    * Simplify code<br>

@@ -61,20 +61,13 @@ I2C slave device relative code.
 ### { PHASE2. PLATFORM CODE }
 **NAME**: I2C SLAVE INIT<br>
 **FILE**: plat_i2c_slave.c<br>
-**DESCRIPTION**: Provide i2c slave config table "I2C_SLAVE_CFG_TABLE[]" for init and "util_init_I2C_slave()" for user access.<br>
+**DESCRIPTION**: Provide i2c slave config table "I2C_SLAVE_CFG_TABLE[]" for init slave config.<br>
 **AUTHOR**: MouchenHung<br>
 **DATE/VERSION**: 2021.11.25 - v1.0<br>
 **Note**: <br>
     (1) "plat_i2c_slave.h" is included by "hal_i2c_slave.h"<br>
-<br>
-    (2) "util_init_I2C_slave()" is required before any function or api, cause mutex lock create inside it.<br>
-<br>
-    (3) I2C slave function/api usage recommend<br>
-        [INIT]<br>
-        * Common init<br>
-          "util_init_I2C_slave()" --> "q_i2c_slave_register()"<br>
-<br>
-##### _____HISTORY______________________________________________________________________<br>
+
+##### _____HISTORY______________________________________________________________________
 **v1.0** - 2021.11.25 - First commit<br>
 <br>
 ##### ==================================================================================
@@ -111,17 +104,17 @@ I2C slave device relative code.
 	}
 ```
 ##### [STEP3. Add init function to main.c "main()"]
-	```c
+```c
 	do_init_I2C_slave();
 
 	uint32_t i;
 	for (i = 0; i < MCTP_SMBUS_NUM; i++) {
-	```
+```
 
 ##### [STEP3. Add read api to "mctp_smbus_read"]
-	```c
+```c
 	uint8_t ret = i2c_slave_read(mctp_inst->medium_conf.smbus_conf.bus, rdata, ARRAY_SIZE(rdata), &rlen);
 	if (ret){
 	printk("Error occur: couse of errorcode[%d]\n", ret);
 	}
-	```
+```

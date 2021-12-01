@@ -10,6 +10,8 @@ void test_case2_1(void);
 void test_case2_2(void);
 void test_case3(void);
 void test_case4(void);
+void test_case6(void);
+void test_case7(void);
 #if MCTP_CMD_SUPPORT == 1
 #include "mctp.h"
 #include "pldm.h"

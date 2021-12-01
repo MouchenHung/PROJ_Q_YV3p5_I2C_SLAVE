@@ -17,10 +17,10 @@
 #include <device.h>
 #include <devicetree.h>
 
-#define SHELL_VERSION "v1.0"
-#define SHELL_DATE "2021.11.15"
+#define SHELL_VERSION "v1.1"
+#define SHELL_DATE "2021.12.01"
 
-LOG_MODULE_REGISTER(i2c_slave_shell, CONFIG_I2C_LOG_LEVEL);
+LOG_MODULE_DECLARE(mc_i2c_slave, CONFIG_I2C_LOG_LEVEL);
 
 #define DT_DRV_COMPAT aspeed_i2c
 
@@ -70,7 +70,7 @@ static void cmd_i2c_slave_get_status(const struct shell *shell, size_t argc, cha
 		return;
 	}
 
-	if (q_i2c_slave_status_print(slave_bus)){
+	if (i2c_slave_status_print(slave_bus)){
 		shell_print(shell, "<error> Bus %d can't reach current status!", slave_bus);
 		return;
 	}
@@ -115,7 +115,7 @@ static void cmd_i2c_slave_register(const struct shell *shell, size_t argc, char 
 		cur_cfg->i2c_msg_count = max_msg_num;
 		cur_cfg->enable = 0; //no affect
 
-		ret = q_i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
+		ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
 		if (ret){
 			shell_print(shell, "<error> I2c slave register bus failed with errorcode %d!", ret);
 		}
@@ -125,7 +125,7 @@ static void cmd_i2c_slave_register(const struct shell *shell, size_t argc, char 
 	}
 	else{
 		cur_cfg = NULL;
-		ret = q_i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_UNREGISTER);
+		ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_UNREGISTER);
 		if (ret){
 			shell_print(shell, "<error> I2c slave unregister bus failed with errorcode %d!", ret);
 		}
@@ -161,7 +161,7 @@ static void cmd_i2c_slave_read(const struct shell *shell, size_t argc, char **ar
 	uint16_t rx_len = 0;
 	uint8_t ret = 0;
 	
-	ret = q_i2c_slave_read(slave_bus, msg, max_slave_read, &rx_len);
+	ret = i2c_slave_read(slave_bus, msg, max_slave_read, &rx_len);
 	if (!ret){
 		if (rx_len){
 			memcpy(ipmb_buffer_rx, (uint8_t *)msg, rx_len);
@@ -235,10 +235,22 @@ static void cmd_i2c_slave_write(const struct shell *shell, size_t argc, char **a
 	}
 }
 
+static void testcase_help(const struct shell *shell){
+		shell_print(shell, "Try case_num [1]: test case 1    Testing only 1 loop");
+		shell_print(shell, "Try case_num [2]: test case 2-1  Change config then test 1 loop");
+		shell_print(shell, "Try case_num [3]: test case 2-2  Dynamic modify then test 1 loop");
+		shell_print(shell, "Try case_num [4]: test case 3    Test for slave queue with loops");
+		shell_print(shell, "Try case_num [5]: test case 4    Stress for msgq memory while modify slave config");
+		shell_print(shell, "Try case_num [6]: test case 5    MCTP command test");
+		shell_print(shell, "Try case_num [7]: test case 6    I2C stress test - single thread");
+		shell_print(shell, "Try case_num [8]: test case 7    [get_i2c_controller_name] stress");
+}
+
 static void cmd_i2c_slave_test(const struct shell *shell, size_t argc, char **argv){
 #if EVB_BOARD
 	if (argc != 2){
 		shell_print(shell, "Try: i2c_test master_writesingle <case_num>");
+		testcase_help(shell);
 		return;
 	}
 
@@ -271,15 +283,18 @@ static void cmd_i2c_slave_test(const struct shell *shell, size_t argc, char **ar
 		test_case5();
 #endif
 		break;
+
+	case 7:
+		test_case6();
+		break;
+
+	case 8:
+		test_case7();
+		break;
 	
 	default:
 		shell_print(shell, "<warning> Test case not exist!");
-		shell_print(shell, "Try case_num [1]: test case 1    Testing only 1 loop");
-		shell_print(shell, "Try case_num [2]: test case 2-1  Change config then test 1 loop");
-		shell_print(shell, "Try case_num [3]: test case 2-2  Dynamic modify then test 1 loop");
-		shell_print(shell, "Try case_num [4]: test case 3    Test for slave queue with loops");
-		shell_print(shell, "Try case_num [5]: test case 4    Stress for msgq memory while modify slave config");
-		shell_print(shell, "Try case_num [6]: test case 5    MCTP command test");
+		testcase_help(shell);
 		break;
 	}
 #else

@@ -98,7 +98,7 @@ I2C slave device relative code.
 				cur_cfg->i2c_msg_count = I2C_SLAVE_CFG_TABLE[i].i2c_msg_count;
 				cur_cfg->enable = I2C_SLAVE_CFG_TABLE[i].enable;
 
-				ret = q_i2c_slave_control(i, cur_cfg, I2C_CONTROL_REGISTER);
+				ret = i2c_slave_control(i, cur_cfg, I2C_CONTROL_REGISTER);
 				if (ret)
 					printk("do_init_I2C_slave: Init bus[%d] slave - failed, cause of errorcode[%d]\n", i, ret);
 				else
@@ -117,11 +117,8 @@ I2C slave device relative code.
 
 ##### [STEP3. Add read api to "mctp_smbus_read"]
 	```c
-	uint8_t ret = q_i2c_slave_read(mctp_inst->medium_conf.smbus_conf.bus, rdata, ARRAY_SIZE(rdata), &rlen);
+	uint8_t ret = i2c_slave_read(mctp_inst->medium_conf.smbus_conf.bus, rdata, ARRAY_SIZE(rdata), &rlen);
 	if (ret){
 	printk("Error occur: couse of errorcode[%d]\n", ret);
 	}
-
-	//rlen--;
-	//memmove(&rdata[0], &rdata[1], rlen);
 	```

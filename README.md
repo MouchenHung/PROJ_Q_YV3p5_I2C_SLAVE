@@ -3,8 +3,8 @@ I2C slave device relative code.
 ##### ==================================================================================
 ### OVERLOOK - LATEST
 ##### ==================================================================================
-###### **PHASE1**. DEVICE CODE    v1.4  2021.12.01
-###### **PHASE2**. PLATFORM CODE  v1.0  2021.11.25
+###### **PHASE1**. DEVICE CODE    v1.4.1  2021.12.02
+###### **PHASE2**. PLATFORM CODE  v1.1  2021.12.02
 
 ##### ==================================================================================
 ### COMMIT CONTEXT
@@ -14,7 +14,7 @@ I2C slave device relative code.
 **FILE**: hal_i2c_slave.c<br>
 **DESCRIPTION**: There is 1 callback function "i2c_slave_cb" for I2C slave ISR handle and user APIs "q_*" for user access.<br>
 **AUTHOR**: MouchenHung<br>
-**DATE/VERSION**: 2021.12.01 - v1.4<br>
+**DATE/VERSION**: 2021.12.02 - v1.4.1<br>
 **Note**: <br>
     (1) Shall not modify code in this file!!!<br>
 <br>
@@ -54,21 +54,25 @@ I2C slave device relative code.
 		    * Add platform code to exclude modifiable code from previous "hal_i2c_slave.c"<br>
 		    * Remove init and register action in function "util_init_I2C_slave()", which means additional action is needed in main function<br>
 		    * Move i2c slave table "I2C_SLAVE_CFG_TABLE[]" and "util_init_I2C_slave()" to "plat_i2c_slave.c" as platform file<br>
-**v1.2 - 2021.12.01** - Code modify3<br>
+**v1.4 - 2021.12.01** - Code modify3<br>
 		    * Bug fixed<br>
 		    * Simplify code<br>
+**v1.4.1 - 2021.12.01** - Code modify4<br>
+		    * Bug fixed<br>
+		    * Simplify code<br>  
 <br>
 ### { PHASE2. PLATFORM CODE }
 **NAME**: I2C SLAVE INIT<br>
 **FILE**: plat_i2c_slave.c<br>
 **DESCRIPTION**: Provide i2c slave config table "I2C_SLAVE_CFG_TABLE[]" for init slave config.<br>
 **AUTHOR**: MouchenHung<br>
-**DATE/VERSION**: 2021.11.25 - v1.0<br>
+**DATE/VERSION**: 2021.12.02 - v1.1<br>
 **Note**: <br>
     (1) "plat_i2c_slave.h" is included by "hal_i2c_slave.h"<br>
 
 ##### _____HISTORY______________________________________________________________________
 **v1.0** - 2021.11.25 - First commit<br>
+**v1.1** - 2021.12.02 - Code modify<br>
 <br>
 ##### ==================================================================================
 ### USAGE
@@ -84,13 +88,11 @@ I2C slave device relative code.
 ```c
 	void do_init_I2C_slave(void) {
 		uint8_t ret = 0;
-
+		struct _i2c_slave_config *cur_cfg = (struct _i2c_slave_config *)malloc(sizeof(struct _i2c_slave_config));
+		
 	  	/* Parsing slave config only if bus is enable */
 	  	for (int i=0; i<MAX_SLAVE_NUM; i++){
 			if (I2C_SLAVE_CFG_TABLE[i].enable){
-				struct _i2c_slave_config *cur_cfg = (struct _i2c_slave_config *)malloc(sizeof(struct _i2c_slave_config));
-				cur_cfg->controller_dev_name = NULL; //no affect
-				cur_cfg->enable = 0; //no affect
 				cur_cfg->address = I2C_SLAVE_CFG_TABLE[i].address;
 				cur_cfg->i2c_msg_count = I2C_SLAVE_CFG_TABLE[i].i2c_msg_count;
 
@@ -101,6 +103,7 @@ I2C slave device relative code.
 					printk("+ Init bus[%d] slave -   success!\n", i);
 			}
 	  	}
+		free(cur_cfg);
 	}
 ```
 ##### [STEP3. Add init function to main.c "main()"]

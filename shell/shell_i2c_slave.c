@@ -20,7 +20,7 @@
 #define SHELL_VERSION "v1.1"
 #define SHELL_DATE "2021.12.01"
 
-LOG_MODULE_DECLARE(mc_i2c_slave, CONFIG_I2C_LOG_LEVEL);
+LOG_MODULE_DECLARE(mc_i2c_slave);
 
 #define DT_DRV_COMPAT aspeed_i2c
 
@@ -48,7 +48,7 @@ static int cmd_info_print(const struct shell *shell, size_t argc, char **argv){
 	shell_print(shell, "* DATE/VERSION:  %s - %s", SHELL_DATE, SHELL_VERSION);
 	shell_print(shell, "* Note:          You know, I'm Mouchen Hung, the most handsome one!!");
 	shell_print(shell, "========================{SHELL COMMAND INFO}========================");
-
+	LOG_DBG("TESTING...");
 	return 0;
 }
 
@@ -103,17 +103,13 @@ static void cmd_i2c_slave_register(const struct shell *shell, size_t argc, char 
 	sprintf(num, "%d", slave_bus);
 	strcat(ControlerName, num);
 
-	struct _i2c_slave_config *cur_cfg;
-
 	if (register_flag != 0 && register_flag != 1){
 		shell_print(shell, "<warning> register flag only accept 1 or 0");
 	}
 	else if (register_flag){
-		cur_cfg = (struct _i2c_slave_config *)malloc(sizeof(struct _i2c_slave_config));
+		struct _i2c_slave_config *cur_cfg = (struct _i2c_slave_config *)malloc(sizeof(struct _i2c_slave_config));
 		cur_cfg->address = slave_addr;
-		cur_cfg->controller_dev_name = ControlerName;
 		cur_cfg->i2c_msg_count = max_msg_num;
-		cur_cfg->enable = 0; //no affect
 
 		ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
 		if (ret){
@@ -122,10 +118,10 @@ static void cmd_i2c_slave_register(const struct shell *shell, size_t argc, char 
 		else{
 			shell_print(shell, "--> I2c slave register bus success!");
 		}
+		free(cur_cfg);
 	}
 	else{
-		cur_cfg = NULL;
-		ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_UNREGISTER);
+		ret = i2c_slave_control(slave_bus, NULL, I2C_CONTROL_UNREGISTER);
 		if (ret){
 			shell_print(shell, "<error> I2c slave unregister bus failed with errorcode %d!", ret);
 		}

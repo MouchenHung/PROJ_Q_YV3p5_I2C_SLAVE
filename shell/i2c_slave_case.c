@@ -152,9 +152,8 @@ static void i2c_transfer_test(uint8_t master_bus, uint8_t slave_bus, uint8_t sla
 	uint8_t ret = 0;
 	uint16_t rx_len = 0;
 	uint8_t ipmb_buffer_rx[30];
-	uint8_t stop_flag = 0;
 	uint16_t max_slave_read = 30;
-	uint8_t *msg = (uint8_t*)malloc(max_slave_read * sizeof(uint8_t));
+	uint8_t msg[max_slave_read];
 
 	if (msg_tx_length>30){
 		printk("<warning> Tx msg length over 30");
@@ -170,34 +169,23 @@ static void i2c_transfer_test(uint8_t master_bus, uint8_t slave_bus, uint8_t sla
 	}
 
 	printk("-------------------- testing start --------------------\n");
-	printk("* i2c master: Bus[%d]\n", master_bus);
-	printk("* i2c slave:  Bus[%d]\n", slave_bus);
-	printk("Master transfer data to Slave\n");
+	printk("Bus[%d] --> Bus[%d]\n", master_bus, slave_bus);
+
 	i2c_master_write(&i2c_msg, retry);
 
-	printk("Slave receive data from Master\n");
-	while (1) {
-		if(stop_flag){
-			break;
+	rx_len = 0;
+	ret = i2c_slave_read(slave_bus, msg, max_slave_read, &rx_len);
+	if (!ret) {
+		memcpy(ipmb_buffer_rx, (uint8_t *)msg, rx_len);
+		printk(">> Slave read: ");
+		for(int i=0; i<rx_len; i++){
+			printk("0x%x ", ipmb_buffer_rx[i]);
 		}
-  		k_msleep(10);
-		rx_len = 0;
-
-		ret = i2c_slave_read(slave_bus, msg, max_slave_read, &rx_len);
-		
-		if (!ret) {
-			memcpy(ipmb_buffer_rx, (uint8_t *)msg, rx_len);
-			printk("--> Slave read: ");
-			for(int i=0; i<rx_len; i++){
-				printk("0x%x ", ipmb_buffer_rx[i]);
-			}
-			printk("\n");
-			stop_flag = 1;
-		} else {
-			continue;
-		}
-		
+		printk("\n");
+	} else {
+		printk("<error> slave read error with errorcode %d!!!\n", ret);
 	}
+	
 	printk("-------------------- testing end   --------------------\n");
 }
 
@@ -256,10 +244,9 @@ void test_case2_1(void){
 	printk("modify slave in bus 1\n");
 	cur_cfg = (struct _i2c_slave_config *)malloc(sizeof(struct _i2c_slave_config));
 	cur_cfg->address = 0x44;
-	cur_cfg->controller_dev_name = "I2C_1";
 	cur_cfg->i2c_msg_count = 0x08;
-	cur_cfg->enable = 0; // no affect
 	ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
+	free(cur_cfg);
 	if(ret){
 		printk("<error> i2c slave register bus[1] failed with errorcode %d!\n", ret);
 	}
@@ -315,10 +302,9 @@ void test_case2_2(void){
 	slave_bus = 3;
 	cur_cfg = (struct _i2c_slave_config *)malloc(sizeof(struct _i2c_slave_config));
 	cur_cfg->address = 0x80;
-	cur_cfg->controller_dev_name = "I2C_3";
 	cur_cfg->i2c_msg_count = 0x05;
-	cur_cfg->enable = 0; // no affect
 	ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
+	free(cur_cfg);
 	if (ret){
 		printk("<error> i2c slave register bus[3] failed with errorcode %d!\n", ret);
 	}
@@ -376,10 +362,9 @@ void test_case4(void){
 
 	printk("init slave in bus 3\n");
 	cur_cfg->address = 0x60;
-	cur_cfg->controller_dev_name = "I2C_3";
 	cur_cfg->i2c_msg_count = 0x0A;
-	cur_cfg->enable = 0; // no affect
 	ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
+	free(cur_cfg);
 	if (ret){
 		printk("<error> i2c slave register bus[3] failed with errorcode %d!\n", ret);
 	}
@@ -389,15 +374,14 @@ void test_case4(void){
 	{
 		printk("modify slave in bus 3 - loop[%d]\n", loop);
 		cur_cfg->address = 0x30;
-		cur_cfg->controller_dev_name = "I2C_3";
 		cur_cfg->i2c_msg_count = 0x0C;
-		cur_cfg->enable = 0; // no affect
 		ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
 		if (ret){
 			printk("<error> i2c slave modify bus[3] failed with errorcode %d!\n", ret);
 		}
 		loop++;
 	}
+	free(cur_cfg);
 
 	printk("< system > End test4.\n\n");
 }
@@ -425,13 +409,12 @@ void test_case6(void){
 		printk("register slave in bus 3\n");
 		slave_bus = 3;
 		memset(cur_cfg, 0, sizeof(struct _i2c_slave_config));
-		cur_cfg->controller_dev_name = "I2C_3";
 		cur_cfg->address = 0x80;
 		cur_cfg->i2c_msg_count = 0x0A;
-		cur_cfg->enable = 0; // no affect
 		ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
 		if (ret){
 			printk("<error> i2c slave register bus[%d] failed with errorcode %d!\n", slave_bus, ret);
+			goto error;
 		}
 
 		/* unregister bus 2 */
@@ -440,6 +423,7 @@ void test_case6(void){
 		ret = i2c_slave_control(slave_bus, NULL, I2C_CONTROL_UNREGISTER);
 		if(ret){
 			printk("<error> i2c slave unregister bus[%d] failed with errorcode %d!\n", slave_bus, ret);
+			goto error;
 		}
 
 		/* transfer data */
@@ -454,19 +438,19 @@ void test_case6(void){
 		ret = i2c_slave_control(slave_bus, NULL, I2C_CONTROL_UNREGISTER);
 		if(ret){
 			printk("<error> i2c slave unregister bus[%d] failed with errorcode %d!\n", slave_bus, ret);
+			goto error;
 		}
 
 		/* register bus 2 */
 		printk("register slave in bus 2\n");
 		slave_bus = 2;
 		memset(cur_cfg, 0, sizeof(struct _i2c_slave_config));
-		cur_cfg->controller_dev_name = "I2C_2";
 		cur_cfg->address = 0x60;
 		cur_cfg->i2c_msg_count = 0x0B;
-		cur_cfg->enable = 0; // no affect
 		ret = i2c_slave_control(slave_bus, cur_cfg, I2C_CONTROL_REGISTER);
 		if (ret){
 			printk("<error> i2c slave register bus[%d] failed with errorcode %d!\n", slave_bus, ret);
+			goto error;
 		}
 
 		/* transfer data */
@@ -478,6 +462,9 @@ void test_case6(void){
 		printk("\n\n");
 		loop++;
 	}
+
+error:
+	free(cur_cfg);
 
 	printk("< system > End test6.\n\n");
 }

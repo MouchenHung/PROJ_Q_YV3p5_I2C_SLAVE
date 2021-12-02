@@ -9,6 +9,7 @@
 #define MAX_I2C_SLAVE_BUFF 512
 #define MAX_SLAVE_NUM 16
 #define I2C_DEVICE_PREFIX "I2C_"
+#define I2C_CONTROLLER_NAME_GET(inst) I2C_DEVICE_PREFIX #inst
 
 struct __attribute__((__packed__)) i2c_msg_package {
 	uint16_t msg_length;
@@ -26,10 +27,8 @@ struct i2c_slave_data {
 };
 
 struct _i2c_slave_config {
-	char *controller_dev_name;
 	uint8_t address;
 	uint32_t i2c_msg_count;
-	uint8_t enable;
 };
 
 struct i2c_slave_device
@@ -66,6 +65,7 @@ enum i2c_slave_api_control_mode{
 	I2C_CONTROL_MAX = 0xFF
 };
 
+extern const bool I2C_SLAVE_EN_TABLE[MAX_SLAVE_NUM];
 extern const struct _i2c_slave_config I2C_SLAVE_CFG_TABLE[MAX_SLAVE_NUM];
 
 uint8_t i2c_slave_status_get(uint8_t bus_num);

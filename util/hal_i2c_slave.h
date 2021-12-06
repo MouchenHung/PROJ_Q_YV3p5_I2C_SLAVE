@@ -65,13 +65,12 @@ enum i2c_slave_api_control_mode{
 	I2C_CONTROL_MAX = 0xFF
 };
 
-extern const bool I2C_SLAVE_EN_TABLE[MAX_SLAVE_NUM];
-extern const struct _i2c_slave_config I2C_SLAVE_CFG_TABLE[MAX_SLAVE_NUM];
-
 uint8_t i2c_slave_status_get(uint8_t bus_num);
 uint8_t i2c_slave_status_print(uint8_t bus_num);
 uint8_t i2c_slave_cfg_get(uint8_t bus_num, struct _i2c_slave_config *cfg);
 uint8_t i2c_slave_read(uint8_t bus_num, uint8_t *buff, uint16_t buff_len, uint16_t *msg_len);
 int i2c_slave_control(uint8_t bus_num, struct _i2c_slave_config *cfg, enum i2c_slave_api_control_mode mode);
+
+void util_init_I2C_slave(void);
 
 #endif

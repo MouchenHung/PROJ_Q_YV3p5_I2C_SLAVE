@@ -1,9 +1,9 @@
 /*
   NAME: I2C SLAVE DEVICE
   FILE: hal_i2c_slave.c
-  DESCRIPTION: There is 1 callback function "i2c_slave_cb" for I2C slave ISR handle and user APIs "q_*" for user access.
+  DESCRIPTION: There is 1 callback function "i2c_slave_cb" for I2C slave ISR handle and user APIs for user access.
   AUTHOR: MouchenHung
-  DATE/VERSION: 2021.12.01 - v1.4.1
+  DATE/VERSION: 2021.12.09 - v1.4.2
   Note: 
     (1) Shall not modify code in this file!!!
 
@@ -53,7 +53,7 @@ static int do_i2c_slave_unregister(uint8_t bus_num);
 
 static int i2c_slave_write_requested(struct i2c_slave_config *config)
 {
-	struct i2c_slave_data *data;
+  struct i2c_slave_data *data;
 
   if (!config){
     LOG_ERR("Get empty config!");
@@ -86,12 +86,12 @@ static int i2c_slave_write_received(struct i2c_slave_config *config, uint8_t val
   }
   data->current_msg.msg[data->buffer_idx++] = val;
 
-	return 0;
+  return 0;
 }
 
 static int i2c_slave_stop(struct i2c_slave_config *config)
 {
-	struct i2c_slave_data *data;
+  struct i2c_slave_data *data;
   
   if (!config){
     LOG_ERR("Get empty config!");
@@ -125,15 +125,15 @@ static int i2c_slave_stop(struct i2c_slave_config *config)
     }
   }
 
-	return 0;
+  return 0;
 }
 
 static const struct i2c_slave_callbacks i2c_slave_cb = {
-	.write_requested = i2c_slave_write_requested,
-	.read_requested = NULL,
-	.write_received = i2c_slave_write_received,
-	.read_processed = NULL,
-	.stop = i2c_slave_stop,
+  .write_requested = i2c_slave_write_requested,
+  .read_requested = NULL,
+  .write_received = i2c_slave_write_received,
+  .read_processed = NULL,
+  .stop = i2c_slave_stop,
 };
 
 /*
@@ -234,9 +234,9 @@ uint8_t i2c_slave_status_print(uint8_t bus_num)
   struct i2c_slave_device *slave_info = &i2c_slave_device_global[bus_num];
   printk("=============================\n");
   printk("Slave bus[%d] monitor\n", bus_num);
-	printk("* init:        %d\n", slave_info->is_init);
-	printk("* register:    %d\n", slave_info->is_register);
-	printk("* address:     0x%x\n", data->config.address);
+  printk("* init:        %d\n", slave_info->is_init);
+  printk("* register:    %d\n", slave_info->is_register);
+  printk("* address:     0x%x\n", data->config.address);
   printk("* status:      %d/%d\n", k_msgq_num_used_get(&data->z_msgq_id), data->z_msgq_id.max_msgs);
   printk("=============================\n");
 
@@ -269,7 +269,7 @@ uint8_t i2c_slave_read(uint8_t bus_num, uint8_t *buff, uint16_t buff_len, uint16
     return I2C_SLAVE_API_BUS_GET_FAIL;
   }
 
-	struct i2c_slave_data *data = &i2c_slave_device_global[bus_num].data;
+  struct i2c_slave_data *data = &i2c_slave_device_global[bus_num].data;
   struct i2c_msg_package local_buf;
 
   /* wait if there's no any message in message queue */
@@ -297,8 +297,8 @@ uint8_t i2c_slave_read(uint8_t bus_num, uint8_t *buff, uint16_t buff_len, uint16
       return I2C_SLAVE_API_BUS_GET_FAIL;
     }
   }
-	
-	return I2C_SLAVE_API_NO_ERR;
+  
+  return I2C_SLAVE_API_NO_ERR;
 }
 
 /*
@@ -394,8 +394,7 @@ static int do_i2c_slave_cfg(uint8_t bus_num, struct _i2c_slave_config *cfg){
     status = do_i2c_slave_unregister(bus_num);
     if (status){
       LOG_ERR("Slave bus[%d] mutex lock failed!", bus_num);
-      ret = I2C_SLAVE_API_BUS_GET_FAIL;
-      goto unlock;
+      return I2C_SLAVE_API_BUS_GET_FAIL;
     }
   }
 
@@ -440,33 +439,17 @@ static int do_i2c_slave_cfg(uint8_t bus_num, struct _i2c_slave_config *cfg){
     }
     
     data->config.callbacks = &i2c_slave_cb;
-    i2c_slave_device_global[bus_num].is_init = 1;
   }
   /* do modify, modify config set after init */
   else{
     LOG_DBG("Bus[%d] is going to modified!", bus_num);
-    /*
-    printk("*buffer_start: %p\n", data->z_msgq_id.buffer_start);
-    printk("*buffer_end:   %p\n", data->z_msgq_id.buffer_end);
-    printk("*read_ptr:     %p\n", data->z_msgq_id.read_ptr);
-    printk("*write_ptr:    %p\n", data->z_msgq_id.write_ptr);
-    */
+
     k_msgq_purge(&data->z_msgq_id);
     
     if (data->z_msgq_id.buffer_start != NULL){
       free(data->z_msgq_id.buffer_start);
       data->z_msgq_id.buffer_start = NULL;
     }
-    /*
-    printk("buffer_start: %p\n", data->z_msgq_id.buffer_start);
-    printk("buffer_end:   %p\n", data->z_msgq_id.buffer_end);
-    printk("read_ptr:     %p\n", data->z_msgq_id.read_ptr);
-    printk("write_ptr:    %p\n", data->z_msgq_id.write_ptr);
-
-    if (data->z_msgq_id.buffer_start != NULL){
-      printk("still there!!!\n");
-    }
-    */
   }
 
   data->max_msg_count = _max_msg_count;
@@ -480,6 +463,8 @@ static int do_i2c_slave_cfg(uint8_t bus_num, struct _i2c_slave_config *cfg){
   }
 
   k_msgq_init(&data->z_msgq_id, i2C_slave_queue_buffer, sizeof(struct i2c_msg_package), data->max_msg_count);
+
+  i2c_slave_device_global[bus_num].is_init = 1;
 
   LOG_DBG("I2C slave bus[%d] message queue create success with count %d!", data->i2c_bus, data->max_msg_count);
 
